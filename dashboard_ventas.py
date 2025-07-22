@@ -56,15 +56,12 @@ st.markdown("""
 
 # --- FUNCIONES AUXILIARES ---
 @st.cache_data
-def load_data(path):
-    """Carga y preprocesa los datos desde un archivo Excel de forma robusta."""
-    if not os.path.exists(path):
-        st.error(f"Error: No se encontró el archivo en la ruta: {path}")
-        return None
+def load_data_from_gsheets(sheet_url):
     try:
-        df = pd.read_excel(path, sheet_name="Ventas", engine='openpyxl')
+        url = f"https://docs.google.com/spreadsheets/d/{sheet_url}/export?format=csv&sheet=Ventas"
+        df = pd.read_csv(url)
         df['fecha'] = pd.to_datetime(df['fecha'], dayfirst=True)
-        
+
         dias_map = {
             'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles',
             'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
@@ -73,17 +70,17 @@ def load_data(path):
             1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun',
             7: 'Jul', 8: 'Ago', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dic'
         }
-        
+
         df['año'] = df['fecha'].dt.year
         df['mes_num'] = df['fecha'].dt.month
         df['dia_semana'] = df['fecha'].dt.day_name().map(dias_map)
         df['mes_nombre'] = df['mes_num'].map(meses_map)
         df['mes_año'] = df['fecha'].dt.to_period('M').astype(str)
-        
         return df
     except Exception as e:
-        st.error(f"Ocurrió un error al cargar el archivo: {e}")
+        st.error(f"Error al cargar los datos de Google Sheets: {e}")
         return None
+
 
 def create_heatmap(df, title):
     """Crea una figura de mapa de calor de Plotly."""
@@ -145,8 +142,8 @@ def create_stats_barchart(df, title):
 
 
 # --- CARGA DE DATOS ---
-file_path = "C:/Users/aleja/OneDrive/Documentos/Jugando y Educando/App Visualizacion/MVP/Ventas.xlsx"
-df_original = load_data(file_path)
+sheet_id = "1ZxeNPBsOAN7FwaPyGWrCPYtUMxBTEWclZFC9shF6mr8"  # Reemplaza con el ID real de tu Google Sheets
+df_original = load_data_from_gsheets(sheet_id)
 
 if df_original is None:
     st.stop()
