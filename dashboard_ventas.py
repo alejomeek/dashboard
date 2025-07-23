@@ -115,7 +115,6 @@ def create_stats_barchart(df, title):
     stats = df_operating_days.groupby('tienda')['ventas'].agg(['mean', 'median']).reset_index()
     stats = stats.melt(id_vars='tienda', value_vars=['mean', 'median'], var_name='Métrica', value_name='Valor')
     
-    # --- MEJORA 1: Traducir los nombres de las métricas ---
     stats['Métrica'] = stats['Métrica'].map({'mean': 'Media', 'median': 'Mediana'})
     
     fig = px.bar(
@@ -129,9 +128,8 @@ def create_stats_barchart(df, title):
         labels={'Valor': 'Venta Diaria ($)', 'tienda': 'Tienda', 'Métrica': 'Métrica'},
         template='plotly_white',
         color_discrete_map={'Media': '#636EFA', 'Mediana': '#FFA15A'},
-        text='Valor' # Especificar la columna para el texto
+        text='Valor'
     )
-    # --- MEJORA 2: Mostrar y formatear el valor en las barras ---
     fig.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
     fig.update_layout(
         yaxis={'categoryorder':'total ascending'},
@@ -157,13 +155,27 @@ compare_mode = st.sidebar.checkbox("Comparar dos períodos", value=False)
 st.sidebar.header("Período Principal")
 min_date = df_original['fecha'].min().to_pydatetime()
 max_date = df_original['fecha'].max().to_pydatetime()
+
+# --- CORRECCIÓN: Lógica para la fecha de inicio por defecto ---
+# Establecer la fecha de inicio por defecto al 1 de enero de 2025
+default_start_date = pd.to_datetime("2025-01-01").date()
+
+# Asegurarse de que la fecha de inicio por defecto no sea posterior a la fecha máxima de los datos
+if default_start_date > max_date.date():
+    # Si lo es, usar la fecha mínima de los datos como inicio (para evitar errores)
+    start_value = min_date
+else:
+    # Si no, usar el 1 de enero de 2025
+    start_value = default_start_date
+
 start_date_1, end_date_1 = st.sidebar.date_input(
     "Selecciona el rango de fechas:",
-    value=(min_date, max_date),
+    value=(start_value, max_date), # Usar el valor de inicio calculado
     min_value=min_date,
     max_value=max_date,
     key="periodo1"
 )
+
 
 df_periodo_1 = df_original[
     (df_original['fecha'].between(pd.to_datetime(start_date_1), pd.to_datetime(end_date_1)))
